@@ -1,18 +1,28 @@
 package org.drrandom
 import collection.mutable.HashMap
-import reflect._
 import scala.None
+import reflect._
 
 class BindingInfo[T,U](val source:Manifest[T],dest:Manifest[U]) {
+
   def erasedType = dest.erasure
   def create:Any = erasedType.newInstance()
+}
+
+class InstanceBindingInfo[T,U](override val source:Manifest[T], dest:Manifest[U],instance:U) extends BindingInfo[T,U](source,dest) {
+  override def create:Any = instance
 }
 
 trait TypeBinder[T] {
   val sourceType:Manifest[T]
 
   def To[U<:T](implicit manifest:Manifest[U]) = {
-    new BindingInfo(sourceType,manifest)
+    new BindingInfo[T,U](this.sourceType,manifest)
+  }
+
+  def To[U<:T:Manifest](instance:U) = {
+    val dest = manifest[U]
+    new InstanceBindingInfo[T,U](sourceType,dest,instance)
   }
 }
 
@@ -25,8 +35,8 @@ abstract class Kernel {
 }
 
 protected class StandardKernel extends Kernel {
-  class BasicTypeBinder[T](implicit val sourceType:Manifest[T]) extends TypeBinder[T] {
-
+  class BasicTypeBinder[T](implicit manifest:Manifest[T]) extends TypeBinder[T] {
+    val sourceType = manifest
   }
 
   private var _bindings = HashMap[Manifest[_],BindingInfo[_,_]]()
