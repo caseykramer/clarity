@@ -1,13 +1,14 @@
-A Scala IoC Container
----------------------
+A Scala Composition Tool
+-------------------------
 
 This is what could probably be considered a somewhat misguided attempt of a 
 .Net/C# developer to come to terms with Scala.  To be honest I don't know 
-if there is a real need for IoC in the Scala world.  The existing patterns 
-(specifically the Cake pattern) and ability to use functional techniques such
-as currying and closures provide a lot of compelling and interesting solutions
-to the problem of Dependency Injection.  They do not, however, address issues
-like Lifecycle management and contextual bindings.
+if there is a real need for a "Compisition Framework" in the Scala world.
+The existing patterns for Dependency Injection (specifically the Cake pattern)
+and the ability to use functional techniques such as currying and closures
+provide a lot of compelling and interesting solutions to the problem.  They do not,
+however, address issues like Lifecycle management, contextual bindings, and component
+discovery.
 
 One thing I have been wanting more and more when working with .Net code, is 
 some form of "smart factory", that would provide some way to provide runtime
