@@ -30,7 +30,7 @@ package org.drrandom.tests {
         var result = kernel.get[INestedTest]
         result.get.nested must not beNull
       }
-      
+
       "should throw binding exception if dependent types are not registered" in {
         val kernel = Kernel()
         kernel += Bind[INestedTest].To[TestNested]
@@ -38,9 +38,45 @@ package org.drrandom.tests {
         kernel.get[INestedTest] must throwA[BindingException]
         
       }
+
+      "should allow binding of open generic types, with final type parameters defined at time of request" in {
+        var kernel = Kernel()
+        kernel += Bind[IGeneric[_]].To[OpenGeneric[_]]
+
+        val result = kernel.get[IGeneric[String]]
+
+        result must beSome
+        result.get must beAnInstanceOf[IGeneric[String]]
+      }
+
+      "should resolve matching generic types in preference to any open generic types" in {
+        val kernel = Kernel()
+        kernel += Bind[IGeneric[_]].To[OpenGeneric[_]]
+        kernel += Bind[IGeneric[String]].To[StringGeneric]
+
+        val stringResult = kernel.get[IGeneric[String]]
+
+        stringResult must beSome
+        stringResult.get must beAnInstanceOf[IGeneric[String]]
+
+        val intResult = kernel.get[IGeneric[List[Int]]]
+        
+        intResult must beSome
+        intResult.get must beAnInstanceOf[IGeneric[List[Int]]]
+      }
     }
   }
 }
+
+  trait IGeneric[T]
+
+  class OpenGeneric[T]() extends IGeneric[T] {
+    
+  }
+
+  class StringGeneric() extends IGeneric[String] {
+    
+  }
 
   trait ITest {}
 

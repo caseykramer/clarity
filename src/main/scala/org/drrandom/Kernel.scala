@@ -1,53 +1,12 @@
 package org.drrandom
+
 import collection.mutable.HashMap
 import scala.None
 import java.lang.Class
 import java.lang.reflect._
 import reflect.{Manifest}
 
-class BindingInfo[T,U](val source:Manifest[T],dest:Manifest[U]) {
 
-  val creator: () => Any = createBuilder
-  def erasedType = dest.erasure
-  def create:Any = creator()
-  var kernel:Kernel = null
-
-  private def createBuilder:() => Any = {
-    val bestCtor = findBestConstructor
-    val params = bestCtor.getParameterTypes
-    if(params.size == 0)
-      return () => bestCtor.newInstance()
-    else
-      return () => {
-        val args = params.map(p => kernel.get(p) match {
-          case Some(i) => i.asInstanceOf[java.lang.Object]
-          case None => throw new BindingException("Unable to find dependent type: "+p.toString+" while creating instance of "+erasedType.toString)
-        }).toArray
-        bestCtor.newInstance(args:_*)
-      }
-  }
-
-  def findBestConstructor = dest.erasure.getConstructors.min(Ordering[Int].on[Constructor[_]](_.getParameterTypes.size))
-}
-
-class BindingException(message:String) extends Exception(message)
-
-class InstanceBindingInfo[T,U](override val source:Manifest[T], dest:Manifest[U],instance:U) extends BindingInfo[T,U](source,dest) {
-  override def create:Any = instance
-}
-
-trait TypeBinder[T] {
-  val sourceType:Manifest[T]
-
-  def To[U<:T](implicit manifest:Manifest[U]) = {
-    new BindingInfo[T,U](this.sourceType,manifest)
-  }
-
-  def To[U<:T:Manifest](instance:U) = {
-    val dest = manifest[U]
-    new InstanceBindingInfo[T,U](sourceType,dest,instance)
-  }
-}
 
 abstract class Kernel {
   def +=(binding:BindingInfo[_,_])
@@ -83,7 +42,7 @@ protected class StandardKernel extends Kernel {
   }
 
   def get[T](implicit man:Manifest[T]):Option[T] = {
-    _bindings.get(man) match {
+    findBinding[T] match {
       case None => None
       case Some(b:BindingInfo[T,_]) =>Some(b.create.asInstanceOf[T])
     }
@@ -99,16 +58,28 @@ protected class StandardKernel extends Kernel {
       case Some(b:BindingInfo[_,_]) => Some(b.create)
     }
   }
+
+  private def findBinding[T](implicit man:Manifest[T]):Option[BindingInfo[_,_]] = {
+    _bindings.get(man) match {
+      case Some(b) => Some(b.asInstanceOf[BindingInfo[_,_]])
+      case None => {
+        if (man.typeArguments.size == 0) {
+          None
+        } else {
+          _bindings.find(m => m._1.typeArguments.forall(_.erasure == classOf[Any]) && m._1 >:> man) match {
+            case None => None
+            case Some(x) => {
+              _bindings += man -> x._2.asInstanceOf[BindingInfo[_,_]]
+              Some(x._2.asInstanceOf[BindingInfo[_,_]])
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 object Kernel {
   def apply():Kernel = new StandardKernel()
 }
 
-class Bind[T](implicit val sourceType:Manifest[T]) extends TypeBinder[T] {
-
-}
-
-object Bind {
-  def apply[T](implicit man:Manifest[T]) = new Bind[T]()
-}
