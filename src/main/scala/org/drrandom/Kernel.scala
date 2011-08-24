@@ -8,7 +8,7 @@ import reflect.{Manifest}
 
 
 
-abstract class Kernel {
+trait Kernel {
   def +=(binding:BindingInfo[_,_])
   def register(binding:BindingInfo[_,_])
   def ++=(binding:BindingInfo[_,_]*)
@@ -22,8 +22,7 @@ protected class StandardKernel extends Kernel {
   private var _bindings = HashMap[Manifest[_],BindingInfo[_,_]]()
 
   def +=(binding:BindingInfo[_,_]) = {
-    binding.kernel = this
-    _bindings += binding.source -> binding
+    register(binding)
   }
 
   def register(binding:BindingInfo[_,_]) = {
@@ -31,14 +30,15 @@ protected class StandardKernel extends Kernel {
     _bindings += binding.source -> binding
   }
 
-  def ++=(binding:BindingInfo[_,_]*) = {
-    binding.foreach(_.kernel = this)
-    _bindings ++= binding.map(b => b.source -> b)
+  def ++=(bindings:BindingInfo[_,_]*) = {
+    register(bindings:_*);
   }
 
-  def register(binding:BindingInfo[_,_]*) = {
-    binding.foreach(_.kernel = this)
-    _bindings ++= binding.map(b => b.source -> b)
+  def register(bindings:BindingInfo[_,_]*) = {
+    _bindings ++= bindings.map(b => { 
+      b.kernel = this
+      b.source -> b 
+    })
   }
 
   def get[T](implicit man:Manifest[T]):Option[T] = {
