@@ -27,6 +27,7 @@ class BindingInfo[T,U](val source:Manifest[T],dest:Manifest[U]) {
   }
 
   def findBestConstructor = dest.erasure.getConstructors.min(Ordering[Int].on[Constructor[_]](_.getParameterTypes.size))
+
 }
 
 class InstanceBindingInfo[T,U](override val source:Manifest[T], dest:Manifest[U],instance:U) extends BindingInfo[T,U](source,dest) {

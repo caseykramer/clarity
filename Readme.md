@@ -23,3 +23,18 @@ container.
 Needless to say, right now this seems like a good idea.  I'm willing to accept
 the fact that it is solving a problem that doesn't exist and just call it an
 interesting learning experience.
+
+----
+== Currently Does:==
+* Basic Type->Type resolution (typically dealing with Traits -> Classes, but should work for Class -> Class as well)
+* Constructor selection based on simple heuristic which uses the constructor with the fewest dependencies
+* Nested type construction.  As long as the types used by the constructor are bound, it will resolve them
+* Open generics support, with the added trick of using the more specific bindings before the more general
+
+== Still to do: ==
+* Explode nicely when circular dependencies show up (currently it will blow the stack)
+* Context-based resolutions (so you can say things like if I'm being asked for by class X use Y)
+* Some form of nifty binding syntax/dsl that can crawl types and auto-register
+* Ability to bind to the Scala duck-typ-ish expressions ([{ def IDoSomething:Unit }])
+* Ability to add traits at time of request (not sure if this is possible, but it would be cool)
+* Other stuff I'm not thinking of
